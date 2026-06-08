@@ -59,7 +59,7 @@ FROM dual;
 ```
 
 ![Select AI turns the question into a GROUP BY query and returns East 2000, West 1900, North 1500](result.png)
-*Ask in English → the database generates the `GROUP BY` and returns the answer.*
+*A live `DBMS_CLOUD_AI.GENERATE` run on Oracle 26ai — ask in English, the database writes the `GROUP BY` and returns the answer.*
 
 ## Run it
 
