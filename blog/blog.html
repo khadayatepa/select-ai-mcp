@@ -1,0 +1,87 @@
+<!-- WordPress-ready. Paste into a "Custom HTML" block. Upload architecture.png and
+     result.png from this folder to your Media Library. Edit the byline.
+     Theme: sky / cyan — "getting started". -->
+<div class="ace-selectai-post" style="max-width:840px;margin:0 auto;line-height:1.7;font-size:17px;color:#0c2b33;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+
+  <div style="background:#06343f;border-radius:12px;padding:22px 26px;margin-bottom:24px;color:#cffafe;">
+    <div style="font-size:13px;letter-spacing:1px;color:#67e8f9;">⚡ GETTING STARTED · ORACLE 26ai</div>
+    <h1 style="font-size:1.85em;line-height:1.3;margin:10px 0 6px;color:#fff;">Select AI + SQLcl MCP + Autonomous Database — in One Python File</h1>
+    <p style="margin:0;color:#a5e8f2;">Connect, set up Select AI, and ask your database a question in plain English — start to finish in a single script.</p>
+  </div>
+
+  <p>Three Oracle&nbsp;26ai pieces, wired together in one short Python file: the <strong>SQLcl MCP Server</strong> for a safe connection, <strong>Select AI</strong> so the database can turn English into SQL, and your <strong>Autonomous Database</strong> holding the data. The neat part — the LLM call happens <em>inside</em> Oracle, so your app code never touches the model.</p>
+
+  <figure style="margin:22px 0;text-align:center;">
+    <img src="architecture.png" alt="One Python file connects via SQLcl MCP to the Autonomous Database, which uses Select AI (DBMS_CLOUD_AI) to call the LLM; the script sets up the connection, credential, and AI profile once" style="max-width:100%;height:auto;border-radius:10px;border:1px solid #e5e7eb;" />
+    <figcaption style="font-size:14px;color:#5b7a82;font-style:italic;margin-top:8px;">One file: connection (no password in code) → credential (your LLM key) → AI profile → ask.</figcaption>
+  </figure>
+
+  <h2 style="color:#0891b2;margin-top:32px;">Step 0 — connect through the SQLcl MCP Server</h2>
+  <p>No password in the script. Save a connection once with SQLcl, then the MCP server uses it:</p>
+  <pre style="background:#06343f;color:#cffafe;padding:14px;border-radius:10px;overflow:auto;font-size:13.5px;"><code>sql /nolog
+SQL&gt; conn -save DEBATE -savepwd &lt;user&gt;@&lt;adb-tns-alias&gt;</code></pre>
+  <p>In Python, a few lines open the MCP session and run SQL:</p>
+  <pre style="background:#06343f;color:#cffafe;padding:14px;border-radius:10px;overflow:auto;font-size:13px;"><code>params = StdioServerParameters(command="sql", args=["-mcp"], env=dict(os.environ))
+async with stdio_client(params) as (read, write):
+    async with ClientSession(read, write) as s:
+        await s.initialize()
+        await s.call_tool("connect", {"connection_name": "DEBATE"})
+        await s.call_tool("run-sql", {"sql": "SELECT USER FROM dual"})</code></pre>
+
+  <h2 style="color:#0891b2;margin-top:32px;">Step 1 — a credential + an AI profile</h2>
+  <p>Select AI needs two database objects: a <strong>credential</strong> holding your LLM key, and a <strong>profile</strong> that tells it which tables it may use.</p>
+  <pre style="background:#06343f;color:#cffafe;padding:14px;border-radius:10px;overflow:auto;font-size:13px;"><code>-- credential (your OpenAI key, stored safely in the DB)
+DBMS_CLOUD.CREATE_CREDENTIAL(
+  credential_name =&gt; 'OPENAI_CRED', username =&gt; 'OPENAI', password =&gt; '&lt;api-key&gt;');
+
+-- profile (which provider, model, and tables Select AI may read)
+DBMS_CLOUD_AI.CREATE_PROFILE(
+  profile_name =&gt; 'SALES_AI',
+  attributes   =&gt; '{"provider":"openai","credential_name":"OPENAI_CRED",
+                    "object_list":[{"owner":"DEBATE","name":"SALES"}],"model":"gpt-4o"}');
+DBMS_CLOUD_AI.SET_PROFILE('SALES_AI');</code></pre>
+
+  <p style="background:#ecfeff;border-left:4px solid #0891b2;border-radius:8px;padding:12px 16px;font-size:15px;">🔑 <strong>One-time admin grant.</strong> The database must be allowed to reach the LLM endpoint. Your DBA runs this once (the script prints it for you if it's missing):</p>
+  <pre style="background:#06343f;color:#cffafe;padding:14px;border-radius:10px;overflow:auto;font-size:13px;"><code>BEGIN
+  DBMS_NETWORK_ACL_ADMIN.APPEND_HOST_ACE(
+    host =&gt; 'api.openai.com',
+    ace  =&gt; xs$ace_type(privilege_list =&gt; xs$name_list('http'),
+                        principal_name =&gt; 'DEBATE', principal_type =&gt; xs_acl.ptype_db));
+END;
+/</code></pre>
+
+  <h2 style="color:#0891b2;margin-top:32px;">Step 2 — ask in English</h2>
+  <p>Now the use case. One call, and the database writes the SQL and runs it:</p>
+  <pre style="background:#06343f;color:#cffafe;padding:14px;border-radius:10px;overflow:auto;font-size:13px;"><code>SELECT DBMS_CLOUD_AI.GENERATE(
+         prompt       =&gt; 'What are the total sales by region?',
+         profile_name =&gt; 'SALES_AI',
+         action       =&gt; 'runsql')      -- or 'showsql' to see the SQL, 'narrate' for prose
+FROM dual;</code></pre>
+
+  <figure style="margin:22px 0;text-align:center;">
+    <img src="result.png" alt="Select AI turns 'What are the total sales by region?' into a GROUP BY query and returns East 2000, West 1900, North 1500" style="max-width:100%;height:auto;border-radius:10px;border:1px solid #e5e7eb;" />
+    <figcaption style="font-size:14px;color:#5b7a82;font-style:italic;margin-top:8px;">Ask in English → the database generates the <code>GROUP BY</code> and returns the answer.</figcaption>
+  </figure>
+
+  <h2 style="color:#0891b2;margin-top:32px;">Run it</h2>
+  <pre style="background:#06343f;color:#cffafe;padding:14px;border-radius:10px;overflow:auto;font-size:13.5px;"><code>pip install -r requirements.txt
+copy .env.example .env          # OPENAI_API_KEY + ORACLE_MCP_CONNECTION
+python select_ai_mcp.py         # connects, sets up Select AI, asks the question</code></pre>
+  <p>The script is self-contained: it connects, builds a tiny <code style="background:#ecfeff;padding:1px 6px;border-radius:4px;">sales</code> table, creates the credential and profile, and asks the question — and if the network grant is missing, it prints exactly what your DBA needs to run.</p>
+
+  <h2 style="color:#0891b2;margin-top:32px;">Why it's nice</h2>
+  <ul>
+    <li><strong>The LLM lives in the database.</strong> Your app sends a question, not a prompt — Select AI handles the model call and the SQL.</li>
+    <li><strong>No password in code.</strong> The MCP connection is saved in SQLcl; the LLM key is a database credential.</li>
+    <li><strong>Scoped + safe.</strong> The profile lists exactly which tables Select AI may read.</li>
+  </ul>
+
+  <p style="background:#ecfeff;border-radius:8px;padding:12px 16px;font-size:15px;">📦 <strong>Full code on GitHub:</strong> <a href="https://github.com/khadayatepa/select-ai-mcp" style="color:#0891b2;">github.com/khadayatepa/select-ai-mcp</a></p>
+
+  <div style="background:#ecfeff;border-radius:10px;padding:16px 20px;margin-top:24px;font-size:16px;">
+    <strong style="color:#0891b2;">About the author</strong><br>
+    <strong>Prashant Khadayate</strong> is an <strong>Oracle ACE</strong> focused on the Oracle AI Database (26ai), AI Vector Search, and the SQLcl MCP Server. Connect on <a href="https://www.linkedin.com/in/prashant-khadayate-1a8b0b97/" style="color:#0891b2;">LinkedIn</a> for more hands-on Oracle AI experiments.
+  </div>
+  <p style="font-size:13px;color:#9ca3af;margin-top:14px;">A learning demo.</p>
+
+</div>
