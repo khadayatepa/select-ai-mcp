@@ -8,6 +8,7 @@
 
 - **Tech stack:** Oracle Select AI (DBMS_CLOUD_AI) · SQLcl MCP Server · OpenAI gpt-4o · Python
 - **Database:** Oracle AI Database 26ai — 23.26.2.2.0 (Autonomous Database)
+- **Prerequisites:** SQLcl 25.2+ (MCP), Python 3.10+, OpenAI API key; one-time network ACL grant to the LLM endpoint
 - **Best for:** Natural-language querying — ask in English, the database writes and runs the SQL — in one Python file.
 - **Level:** Beginner
 
