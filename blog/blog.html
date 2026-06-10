@@ -16,7 +16,15 @@
     <figcaption style="font-size:14px;color:#5b7a82;font-style:italic;margin-top:8px;">One file: connection (no password in code) → credential (your LLM key) → AI profile → ask.</figcaption>
   </figure>
 
-  <h2 style="color:#0891b2;margin-top:32px;">Step 0 — connect through the SQLcl MCP Server</h2>
+    <div style="background:#f6f8fa;border:1px solid #e6eaef;border-left:4px solid #0891b2;border-radius:10px;padding:14px 18px;margin:20px 0;font-size:15px;color:#243240;">
+    <div style="font-weight:800;margin-bottom:8px;color:#0f172a;">📋 At a glance</div>
+    <div style="margin:3px 0;"><strong>Tech stack:</strong> Oracle Select AI (DBMS_CLOUD_AI) · SQLcl MCP Server · OpenAI gpt-4o · Python</div>
+    <div style="margin:3px 0;"><strong>Database:</strong> Oracle AI Database 26ai — 23.26.2.2.0 (Autonomous Database)</div>
+    <div style="margin:3px 0;"><strong>Best for:</strong> Natural-language querying — ask in English, the database writes and runs the SQL — in one Python file.</div>
+    <div style="margin:3px 0;"><strong>Level:</strong> Beginner</div>
+  </div>
+
+<h2 style="color:#0891b2;margin-top:32px;">Step 0 — connect through the SQLcl MCP Server</h2>
   <p>No password in the script. Save a connection once with SQLcl, then the MCP server uses it:</p>
   <pre style="background:#06343f;color:#cffafe;padding:14px;border-radius:10px;overflow:auto;font-size:13.5px;"><code>sql /nolog
 SQL&gt; conn -save DEBATE -savepwd &lt;user&gt;@&lt;adb-tns-alias&gt;</code></pre>

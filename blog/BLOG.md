@@ -4,6 +4,14 @@
 
 ---
 
+**📋 At a glance**
+
+- **Tech stack:** Oracle Select AI (DBMS_CLOUD_AI) · SQLcl MCP Server · OpenAI gpt-4o · Python
+- **Database:** Oracle AI Database 26ai — 23.26.2.2.0 (Autonomous Database)
+- **Best for:** Natural-language querying — ask in English, the database writes and runs the SQL — in one Python file.
+- **Level:** Beginner
+
+
 Three Oracle 26ai pieces, wired together in one short Python file: the **SQLcl MCP Server** for a safe connection, **Select AI** so the database can turn English into SQL, and your **Autonomous Database** holding the data. The neat part — the LLM call happens *inside* Oracle, so your app code never touches the model.
 
 ![One Python file → SQLcl MCP → Autonomous Database → Select AI (DBMS_CLOUD_AI) → LLM, with the connection/credential/profile set up once](architecture.png)
