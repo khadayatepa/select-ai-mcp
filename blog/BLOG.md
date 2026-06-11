@@ -86,6 +86,50 @@ The script is self-contained: it connects, builds a tiny `sales` table, creates 
 - **No password in code.** The MCP connection is saved in SQLcl; the LLM key is a database credential.
 - **Scoped + safe.** The profile lists exactly which tables Select AI may read.
 
+## 🛠️ Do it yourself — step by step (manual SQL)
+
+Set up Select AI and ask in English — all SQL/PL/SQL you can run in SQLcl.
+
+**1) Create a credential holding your LLM key**
+
+```sql
+BEGIN
+  DBMS_CLOUD.CREATE_CREDENTIAL(credential_name => 'OPENAI_CRED',
+    username => 'OPENAI', password => '<api-key>');
+END;
+/
+```
+
+**2) Create an AI profile (provider, model, which tables it may read)**
+
+```sql
+BEGIN
+  DBMS_CLOUD_AI.CREATE_PROFILE(profile_name => 'SALES_AI',
+    attributes => '{"provider":"openai","credential_name":"OPENAI_CRED","object_list":[{"owner":"DEBATE","name":"SALES"}],"model":"gpt-4o"}');
+  DBMS_CLOUD_AI.SET_PROFILE('SALES_AI');
+END;
+/
+```
+
+**3) One-time admin grant so the DB can reach the LLM endpoint**
+
+```sql
+BEGIN
+  DBMS_NETWORK_ACL_ADMIN.APPEND_HOST_ACE(host => 'api.openai.com',
+    ace => xs$ace_type(privilege_list => xs$name_list('http'),
+                       principal_name => 'DEBATE', principal_type => xs_acl.ptype_db));
+END;
+/
+```
+
+**4) Ask in English**
+
+```sql
+SELECT DBMS_CLOUD_AI.GENERATE(prompt => 'What are the total sales by region?',
+       profile_name => 'SALES_AI', action => 'runsql') FROM dual;   -- or 'showsql' / 'narrate'
+```
+
+
 📦 **Full code on GitHub:** [github.com/khadayatepa/select-ai-mcp](https://github.com/khadayatepa/select-ai-mcp)
 
 ---

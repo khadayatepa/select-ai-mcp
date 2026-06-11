@@ -85,7 +85,33 @@ python select_ai_mcp.py         # connects, sets up Select AI, asks the question
     <li><strong>Scoped + safe.</strong> The profile lists exactly which tables Select AI may read.</li>
   </ul>
 
-  <p style="background:#ecfeff;border-radius:8px;padding:12px 16px;font-size:15px;">📦 <strong>Full code on GitHub:</strong> <a href="https://github.com/khadayatepa/select-ai-mcp" style="color:#0891b2;">github.com/khadayatepa/select-ai-mcp</a></p>
+    <h2 style="color:#0891b2;margin-top:32px;">🛠️ Do it yourself — step by step (manual SQL)</h2>
+  <p>Set up Select AI and ask in English — all SQL/PL/SQL you can run in SQLcl.</p>
+  <p><strong>1) Create a credential holding your LLM key</strong></p>
+  <pre style="background:#0f172a;color:#e2e8f0;padding:13px;border-radius:9px;overflow:auto;font-size:12.5px;"><code>BEGIN
+  DBMS_CLOUD.CREATE_CREDENTIAL(credential_name =&gt; 'OPENAI_CRED',
+    username =&gt; 'OPENAI', password =&gt; '&lt;api-key&gt;');
+END;
+/</code></pre>
+  <p><strong>2) Create an AI profile (provider, model, which tables it may read)</strong></p>
+  <pre style="background:#0f172a;color:#e2e8f0;padding:13px;border-radius:9px;overflow:auto;font-size:12.5px;"><code>BEGIN
+  DBMS_CLOUD_AI.CREATE_PROFILE(profile_name =&gt; 'SALES_AI',
+    attributes =&gt; '{"provider":"openai","credential_name":"OPENAI_CRED","object_list":[{"owner":"DEBATE","name":"SALES"}],"model":"gpt-4o"}');
+  DBMS_CLOUD_AI.SET_PROFILE('SALES_AI');
+END;
+/</code></pre>
+  <p><strong>3) One-time admin grant so the DB can reach the LLM endpoint</strong></p>
+  <pre style="background:#0f172a;color:#e2e8f0;padding:13px;border-radius:9px;overflow:auto;font-size:12.5px;"><code>BEGIN
+  DBMS_NETWORK_ACL_ADMIN.APPEND_HOST_ACE(host =&gt; 'api.openai.com',
+    ace =&gt; xs$ace_type(privilege_list =&gt; xs$name_list('http'),
+                       principal_name =&gt; 'DEBATE', principal_type =&gt; xs_acl.ptype_db));
+END;
+/</code></pre>
+  <p><strong>4) Ask in English</strong></p>
+  <pre style="background:#0f172a;color:#e2e8f0;padding:13px;border-radius:9px;overflow:auto;font-size:12.5px;"><code>SELECT DBMS_CLOUD_AI.GENERATE(prompt =&gt; 'What are the total sales by region?',
+       profile_name =&gt; 'SALES_AI', action =&gt; 'runsql') FROM dual;   -- or 'showsql' / 'narrate'</code></pre>
+
+<p style="background:#ecfeff;border-radius:8px;padding:12px 16px;font-size:15px;">📦 <strong>Full code on GitHub:</strong> <a href="https://github.com/khadayatepa/select-ai-mcp" style="color:#0891b2;">github.com/khadayatepa/select-ai-mcp</a></p>
 
   <div style="background:#ecfeff;border-radius:10px;padding:16px 20px;margin-top:24px;font-size:16px;">
     <strong style="color:#0891b2;">About the author</strong><br>
